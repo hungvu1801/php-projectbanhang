@@ -25,7 +25,7 @@
                     <button type="submit" aria-label="Tìm kiếm">⌕</button>
                 </form>
                 <div class="header__actions">
-                    <a class="header__link" href="<?php echo url('Product/add'); ?>">Thêm SP</a>
+                    <a class="header__link" href="<?php echo url('Product/add'); ?>">Đăng Nhập</a>
                     <a href="<?php echo url('Product/cart'); ?>" class="header__cart">
                         <span class="header__cart-icon">
                             🛒

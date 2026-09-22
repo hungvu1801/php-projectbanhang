@@ -52,7 +52,7 @@ class ProductModel
         $price = htmlspecialchars(strip_tags($price));
         $category_id = htmlspecialchars(strip_tags($category_id));
         $image = htmlspecialchars(strip_tags($image));
-        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':name', $name);   
         $stmt->bindParam(':description', $description);
         $stmt->bindParam(':price', $price);
         $stmt->bindParam(':category_id', $category_id);

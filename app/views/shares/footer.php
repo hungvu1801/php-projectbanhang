@@ -26,15 +26,6 @@
                     <li><a href="<?php echo url('Product'); ?>">Giao hàng &amp; Thanh toán</a></li>
                 </ul>
             </div>
-            <div class="footer__col">
-                <p class="f-listtel__title"><strong>Website cùng tập đoàn</strong></p>
-                <ul class="f-listmenu">
-                    <li><a href="https://www.topzone.vn/" target="_blank" rel="nofollow">TopZone</a></li>
-                    <li><a href="https://www.dienmayxanh.com/" target="_blank" rel="nofollow">Điện Máy Xanh</a></li>
-                    <li><a href="https://www.bachhoaxanh.com/" target="_blank" rel="nofollow">Bách Hóa Xanh</a></li>
-                    <li><a href="https://www.nhathuocankhang.com/" target="_blank" rel="nofollow">An Khang</a></li>
-                </ul>
-            </div>
         </section>
         <div class="copyright">
             <section>

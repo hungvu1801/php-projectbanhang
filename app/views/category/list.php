@@ -26,6 +26,7 @@
                     <tr>
                         <th>Tên danh mục</th>
                         <th>Mô tả</th>
+                        <th>Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -33,6 +34,13 @@
                         <tr>
                             <td><strong><?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?></strong></td>
                             <td><?php echo htmlspecialchars($category->description ?? '', ENT_QUOTES, 'UTF-8'); ?></td>
+                            <td>
+                                <div class="admin-actions">
+                                    <a href="<?php echo url('Category/edit/' . $category->id); ?>">Sửa</a>
+                                    <a class="is-danger" href="<?php echo url('Category/delete/' . $category->id); ?>"
+                                        onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này? Các sản phẩm thuộc danh mục cũng sẽ bị xóa.');">Xóa</a>
+                                </div>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
