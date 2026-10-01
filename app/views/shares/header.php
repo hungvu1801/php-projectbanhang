@@ -25,18 +25,12 @@
                     <button type="submit" aria-label="Tìm kiếm">⌕</button>
                 </form>
                 <div class="header__actions">
-                    <a class="header__link" <?php
-                            if (SessionHelper::isLoggedIn()) {
-                                echo "<a class='nav link'>" . $_SESSION['username'] . "</a>";
-                            } else {
-                                echo  "<a class='nav-link' href='/ProjectBanHang/Account/login'>Đăng Nhập</a>";
-                            }?></li>
-                        <li class="nav-item">
-                    </a>
-                    <?php
-                    if (SessionHelper::isLoggedIn()) {
-                        echo  "<a class='nav-link' href='/ProjectBanHang/account/logout'>Đăng Thoát</a>";
-                    } ?> </a>
+                    <?php if (SessionHelper::isLoggedIn()): ?>
+                        <span class="header__link"><?php echo htmlspecialchars($_SESSION['username'], ENT_QUOTES, 'UTF-8'); ?></span>
+                        <a class="header__link" href="<?php echo url('Account/logout'); ?>">Đăng xuất</a>
+                    <?php else: ?>
+                        <a class="header__link" href="<?php echo url('Account/login'); ?>">Đăng nhập</a>
+                    <?php endif; ?>
                     <a href="<?php echo url('Product/cart'); ?>" class="header__cart">
                         <span class="header__cart-icon">
                             🛒

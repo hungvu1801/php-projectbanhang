@@ -1,40 +1,54 @@
 <?php include 'app/views/shares/header.php'; ?>
-<?php
-if (isset($errors)) {
-    echo "<ul>";
-    foreach ($errors as $err) {
-        echo "<li class='text-danger'>$err</li>";
-    }
-    echo "</ul>";
-}
-?>
-<div class="card-body p-5 text-center">
-    <form class="user" action="/ProjectBanHang/account/save" method="post">
-        <div class="form-group row">
-            <div class="col-sm-6 mb-3 mb-sm-0">
-                <input type="text" class="form-control form-control-user"
-                    id="username" name="username" placeholder="username">
-            </div>
-            <div class="col-sm-6">
-                <input type="text" class="form-control form-control-user"
-                    id="fullname" name="fullname" placeholder="fullname">
-            </div>
+
+<div class="admin-wrap">
+    <div class="admin-breadcrumb">
+        <a href="<?php echo url(); ?>">Trang chủ</a>
+        / <strong>Đăng ký</strong>
+    </div>
+
+    <div class="admin-hero">
+        <div class="admin-hero__text">
+            <h1>Đăng ký</h1>
+            <p>Tạo tài khoản mới để mua sắm.</p>
         </div>
-        <div class="form-group row">
-            <div class="col-sm-6 mb-3 mb-sm-0">
-                <input type="password" class="form-control form-control-user"
-                    id="password" name="password" placeholder="password">
+        <a class="btn-tgdd btn-tgdd-ghost" href="<?php echo url('Account/login'); ?>">Đăng nhập</a>
+    </div>
+
+    <div class="admin-panel">
+        <?php if (!empty($errors)): ?>
+            <div class="text-danger" style="margin-bottom:14px;">
+                <ul>
+                    <?php foreach ($errors as $err): ?>
+                        <li><?php echo htmlspecialchars($err, ENT_QUOTES, 'UTF-8'); ?></li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
-            <div class="col-sm-6">
-                <input type="password" class="form-control form-control-user"
-                    id="confirmpassword" name="confirmpassword" placeholder="confirmpassword">
+        <?php endif; ?>
+        <form method="POST" action="<?php echo url('Account/save'); ?>" class="admin-form">
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" name="username" class="form-control"
+                    value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
             </div>
-        </div>
-        <div class="form-group text-center">
-            <button class="btn btn-primary btn-icon-split p-3">
-                Register
-            </button>
-        </div>
-    </form>
+            <div class="form-group">
+                <label for="fullname">Họ và tên</label>
+                <input type="text" id="fullname" name="fullname" class="form-control"
+                    value="<?php echo htmlspecialchars($_POST['fullname'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="confirmpassword">Xác nhận mật khẩu</label>
+                <input type="password" id="confirmpassword" name="confirmpassword" class="form-control" required>
+            </div>
+            <div class="admin-toolbar">
+                <button type="submit" class="btn-tgdd btn-tgdd-primary">Đăng ký</button>
+                <a class="btn-tgdd btn-tgdd-ghost" href="<?php echo url('Account/login'); ?>">Đã có tài khoản?</a>
+            </div>
+        </form>
+    </div>
 </div>
+
 <?php include 'app/views/shares/footer.php'; ?>

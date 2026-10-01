@@ -15,36 +15,94 @@
     </div>
 
     <div class="admin-panel">
-        <?php if (empty($products)): ?>
-            <div class="admin-empty">
-                <p>Hiện chưa có sản phẩm nào.</p>
-                <a class="btn-tgdd btn-tgdd-primary" href="<?php echo url('Product/add'); ?>">Thêm sản phẩm đầu tiên</a>
-            </div>
-        <?php else: ?>
-            <div class="shop-grid">
-                <?php foreach ($products as $product): ?>
-                    <div class="shop-card">
-                        <a href="<?php echo url('Product/show/' . $product->id); ?>" style="text-decoration:none;color:inherit;">
-                            <?php if (!empty($product->image)): ?>
-                                <img class="shop-card__img" src="<?php echo htmlspecialchars(url($product->image), ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo htmlspecialchars($product->name, ENT_QUOTES, 'UTF-8'); ?>">
-                            <?php else: ?>
-                                <div class="shop-card__img shop-card__img--empty">Chưa có ảnh</div>
-                            <?php endif; ?>
-                            <h3 class="shop-card__name"><?php echo htmlspecialchars($product->name, ENT_QUOTES, 'UTF-8'); ?></h3>
-                            <div class="shop-card__cate"><?php echo htmlspecialchars($product->category_name ?? 'Chưa phân loại', ENT_QUOTES, 'UTF-8'); ?></div>
-                            <div class="shop-card__price"><?php echo number_format((float) $product->price, 0, ',', '.'); ?>₫</div>
-                        </a>
-                        <div class="shop-card__actions">
-                            <a class="btn-tgdd btn-tgdd-ghost" href="<?php echo url('Product/edit/' . $product->id); ?>">Sửa</a>
-                            <a class="btn-tgdd btn-tgdd-danger" href="<?php echo url('Product/delete/' . $product->id); ?>"
-                                onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?');">Xóa</a>
-                            <a class="btn-tgdd btn-tgdd-primary" href="<?php echo url('Product/addToCart/' . $product->id); ?>">Thêm vào giỏ</a>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+        <div id="product-empty" class="admin-empty" style="display: none;">
+            <p>Hiện chưa có sản phẩm nào.</p>
+            <a class="btn-tgdd btn-tgdd-primary" href="<?php echo url('Product/add'); ?>">Thêm sản phẩm đầu tiên</a>
+        </div>
+        <div id="product-list" class="shop-grid"></div>
     </div>
 </div>
 
 <?php include 'app/views/shares/footer.php'; ?>
+
+<script>
+    const BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function formatPrice(price) {
+        return Number(price).toLocaleString('vi-VN') + '₫';
+    }
+
+    function productCard(product) {
+        const id = Number(product.id);
+        const name = escapeHtml(product.name);
+        const category = escapeHtml(product.category_name || 'Chưa phân loại');
+        const image = product.image
+            ? `<img class="shop-card__img" src="${escapeHtml(BASE_URL + '/' + product.image)}" alt="${name}">`
+            : `<div class="shop-card__img shop-card__img--empty">Chưa có ảnh</div>`;
+
+        return `
+            <div class="shop-card">
+                <a href="${BASE_URL}/Product/show/${id}" style="text-decoration:none;color:inherit;">
+                    ${image}
+                    <h3 class="shop-card__name">${name}</h3>
+                    <div class="shop-card__cate">${category}</div>
+                    <div class="shop-card__price">${formatPrice(product.price)}</div>
+                </a>
+                <div class="shop-card__actions">
+                    <a class="btn-tgdd btn-tgdd-ghost" href="${BASE_URL}/Product/edit/${id}">Sửa</a>
+                    <button type="button" class="btn-tgdd btn-tgdd-danger" onclick="deleteProduct(${id})">Xóa</button>
+                    <a class="btn-tgdd btn-tgdd-primary" href="${BASE_URL}/Product/addToCart/${id}">Thêm vào giỏ</a>
+                </div>
+            </div>
+        `;
+    }
+
+    function loadProducts() {
+        const productList = document.getElementById('product-list');
+        const emptyState = document.getElementById('product-empty');
+
+        fetch(BASE_URL + '/api/product')
+            .then(response => response.json())
+            .then(data => {
+                if (!Array.isArray(data) || data.length === 0) {
+                    productList.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                emptyState.style.display = 'none';
+                productList.innerHTML = data.map(productCard).join('');
+            })
+            .catch(() => {
+                productList.innerHTML = '';
+                emptyState.style.display = 'block';
+            });
+    }
+
+    function deleteProduct(id) {
+        if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+            return;
+        }
+        fetch(BASE_URL + '/api/product/' + id, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Product deleted successfully') {
+                    loadProducts();
+                } else {
+                    alert('Xóa sản phẩm thất bại');
+                }
+            })
+            .catch(() => alert('Xóa sản phẩm thất bại'));
+    }
+
+    document.addEventListener('DOMContentLoaded', loadProducts);
+</script>

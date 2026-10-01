@@ -1,87 +1,148 @@
 <?php
-class ProductModel
+require_once('app/config/database.php');
+require_once('app/models/ProductModel.php');
+require_once('app/models/CategoryModel.php');
+class ProductApiController
 {
-    private $conn;
-    private $table_name = "product";
-    public function __construct($db)
+    private $productModel;
+    private $db;
+    public function __construct()
     {
-        $this->conn = $db;
+        $this->db = (new Database())->getConnection();
+        $this->productModel = new ProductModel($this->db);
     }
-    public function getProducts()
+    // Lấy danh sách sản phẩm 
+    public function index()
     {
-        $query = "SELECT p.id, p.name, p.description, p.price, c.name as category_name 
-FROM " . $this->table_name . " p 
-LEFT JOIN category c ON p.category_id = c.id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        $result = $stmt->fetchAll(PDO::FETCH_OBJ);
-        return $result;
+        header('Content-Type: application/json');
+        $products = $this->productModel->getProducts();
+        echo json_encode($products);
     }
-    public function getProductById($id)
+    // Lấy thông tin sản phẩm theo ID 
+    public function show($id)
     {
-        $query = "SELECT * FROM " . $this->table_name . " WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        $stmt->execute();
-        $result = $stmt->fetch(PDO::FETCH_OBJ);
-        return $result;
+        header('Content-Type: application/json');
+        $product = $this->productModel->getProductById($id);
+        if ($product) {
+            echo json_encode($product);
+        } else {
+            http_response_code(404);
+            echo json_encode(['message' => 'Product not found']);
+        }
     }
-    public function addProduct($name, $description, $price, $category_id)
+    // Thêm sản phẩm mới
+    public function store()
     {
-        $errors = [];
-        if (empty($name)) {
-            $errors['name'] = 'Tên sản phẩm không được để trống';
+        header('Content-Type: application/json');
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        $image = '';
+
+        if (stripos($contentType, 'application/json') !== false) {
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($data)) {
+                http_response_code(400);
+                echo json_encode(['message' => 'Invalid JSON']);
+                return;
+            }
+            $name = $data['name'] ?? '';
+            $description = $data['description'] ?? '';
+            $price = $data['price'] ?? '';
+            $category_id = $data['category_id'] ?? null;
+        } else {
+            $name = $_POST['name'] ?? '';
+            $description = $_POST['description'] ?? '';
+            $price = $_POST['price'] ?? '';
+            $category_id = $_POST['category_id'] ?? null;
+            try {
+                if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                    $image = $this->uploadImage($_FILES['image']);
+                }
+            } catch (Exception $e) {
+                http_response_code(400);
+                echo json_encode(['errors' => ['image' => $e->getMessage()]]);
+                return;
+            }
         }
-        if (empty($description)) {
-            $errors['description'] = 'Mô tả không được để trống';
+
+        $result = $this->productModel->addProduct(
+            $name,
+            $description,
+            $price,
+            $category_id,
+            $image
+        );
+        if (is_array($result)) {
+            http_response_code(400);
+            echo json_encode(['errors' => $result]);
+        } elseif ($result) {
+            http_response_code(201);
+            echo json_encode(['message' => 'Product created successfully']);
+        } else {
+            http_response_code(400);
+            echo json_encode(['message' => 'Product creation failed']);
         }
-        if (!is_numeric($price) || $price < 0) {
-            $errors['price'] = 'Giá sản phẩm không hợp lệ';
-        }
-        if (count($errors) > 0) {
-            return $errors;
-        }
-        $query = "INSERT INTO " . $this->table_name . " (name, description, price, category_id) VALUES (:name, :description, :price, :category_id)";
-        $stmt = $this->conn->prepare($query);
-        $name = htmlspecialchars(strip_tags($name));
-        $description = htmlspecialchars(strip_tags($description));
-        $price = htmlspecialchars(strip_tags($price));
-        $category_id = htmlspecialchars(strip_tags($category_id));
-        $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':price', $price);
-        $stmt->bindParam(':category_id', $category_id);
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
     }
-    public function updateProduct($id, $name, $description, $price, $category_id)
+    public function update($id)
     {
-        $query = "UPDATE " . $this->table_name . " SET name=:name, description=:description, price=:price, category_id=:category_id WHERE id=:id";
-        $stmt = $this->conn->prepare($query);
-        $name = htmlspecialchars(strip_tags($name));
-        $description = htmlspecialchars(strip_tags($description));
-        $price = htmlspecialchars(strip_tags($price));
-        $category_id = htmlspecialchars(strip_tags($category_id));
-        $stmt->bindParam(':id', $id);
-        $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':price', $price);
-        $stmt->bindParam(':category_id', $category_id);
-        if ($stmt->execute()) {
-            return true;
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents("php://input"), true); 
+        $name = $data['name'] ?? ''; 
+        $description = $data['description'] ?? ''; 
+        $price = $data['price'] ?? ''; 
+        $category_id = $data['category_id'] ?? null; 
+        $image = $data['image'] ?? null;    
+
+        $result = $this->productModel->updateProduct(
+            $id,
+            $name,
+            $description,
+            $price,
+            $category_id,
+            $image
+        );
+        if ($result) {
+            echo json_encode(['message' => 'Product updated successfully']);
+        } else {
+            http_response_code(400);
+            echo json_encode(['message' => 'Product update failed']);
         }
-        return false;
     }
-    public function deleteProduct($id)
+    // Xóa sản phẩm theo ID 
+    public function destroy($id)
     {
-        $query = "DELETE FROM " . $this->table_name . " WHERE id=:id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $id);
-        if ($stmt->execute()) {
-            return true;
+        header('Content-Type: application/json');
+        $result = $this->productModel->deleteProduct($id);
+        if ($result) {
+            echo json_encode(['message' => 'Product deleted successfully']);
+        } else {
+            http_response_code(400);
+            echo json_encode(['message' => 'Product deletion failed']);
         }
-        return false;
+    }
+
+    private function uploadImage($file)
+    {
+        $target_dir = 'uploads/';
+        if (!is_dir($target_dir)) {
+            mkdir($target_dir, 0777, true);
+        }
+
+        $imageFileType = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $target_file = $target_dir . uniqid('product_', true) . '.' . $imageFileType;
+
+        $check = getimagesize($file['tmp_name']);
+        if ($check === false) {
+            throw new Exception('File không phải là hình ảnh');
+        }
+        if ($file['size'] > 10 * 1024 * 1024) {
+            throw new Exception('Hình ảnh có kích thước quá lớn');
+        }
+        if (!in_array($imageFileType, ['jpg', 'jpeg', 'png', 'gif'])) {
+            throw new Exception('Chỉ cho phép các định dạng JPG, JPEG, PNG và GIF.');
+        }
+        if (!move_uploaded_file($file['tmp_name'], $target_file)) {
+            throw new Exception('Có lỗi xảy ra khi tải lên hình ảnh.');
+        }
+        return $target_file;
     }
 }

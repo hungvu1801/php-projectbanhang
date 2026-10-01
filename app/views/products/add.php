@@ -16,16 +16,8 @@
     </div>
 
     <div class="admin-panel">
-        <?php if (!empty($errors)): ?>
-            <div class="text-danger">
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
-        <form method="POST" action="<?php echo url('Product/save'); ?>" class="admin-form" enctype="multipart/form-data" onsubmit="return validateForm();">
+        <div id="form-errors" class="text-danger" style="display:none;margin-bottom:14px;"></div>
+        <form id="add-product-form" class="admin-form" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="name">Tên sản phẩm</label>
                 <input type="text" id="name" name="name" class="form-control" placeholder="Ví dụ: iPhone 17 Pro Max" required>
@@ -42,11 +34,6 @@
                 <label for="category_id">Danh mục</label>
                 <select id="category_id" name="category_id" class="form-control" required>
                     <option value="">-- Chọn danh mục --</option>
-                    <?php foreach ($categories as $category): ?>
-                        <option value="<?php echo $category->id; ?>">
-                            <?php echo htmlspecialchars($category->name, ENT_QUOTES, 'UTF-8'); ?>
-                        </option>
-                    <?php endforeach; ?>
                 </select>
             </div>
             <div class="form-group">
@@ -62,3 +49,67 @@
 </div>
 
 <?php include 'app/views/shares/footer.php'; ?>
+
+<script>
+    const BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function showErrors(errors) {
+        const box = document.getElementById('form-errors');
+        const messages = Array.isArray(errors) ? errors : Object.values(errors || {});
+        if (!messages.length) {
+            box.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+        box.innerHTML = '<ul>' + messages.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>';
+        box.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch(BASE_URL + '/api/category')
+            .then(response => response.json())
+            .then(data => {
+                const categorySelect = document.getElementById('category_id');
+                if (!Array.isArray(data)) {
+                    return;
+                }
+                data.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    categorySelect.appendChild(option);
+                });
+            });
+
+        document.getElementById('add-product-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+
+            fetch(BASE_URL + '/api/product', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok && data.message === 'Product created successfully') {
+                        location.href = BASE_URL + '/Product';
+                        return;
+                    }
+                    if (data.errors) {
+                        showErrors(data.errors);
+                    } else {
+                        showErrors([data.message || 'Thêm sản phẩm thất bại']);
+                    }
+                })
+                .catch(() => showErrors(['Không thể kết nối tới máy chủ.']));
+        });
+    });
+</script>

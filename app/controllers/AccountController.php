@@ -42,16 +42,17 @@ class AccountController
             }
             if (count($errors) > 0) {
                 include_once 'app/views/account/register.php';
-            } else {
-                $result = $this->accountModel->save(
-                    $username,
-                    $fullName,
-                    $password,
-                    $role
-                );
+                return;
             }
+
+            $result = $this->accountModel->save(
+                $username,
+                $fullName,
+                $password,
+                $role
+            );
             if ($result) {
-                header('Location: '.url('Account/login'));
+                header('Location: ' . url('Account/login'));
                 exit;
             }
         }

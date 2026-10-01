@@ -20,6 +20,57 @@ $controllerName = isset($url[0]) && $url[0] != '' ? ucfirst($url[0]) . 'Controll
 // Kiểm tra phần thứ hai của URL để xác định action 
 $action = isset($url[1]) && $url[1] != '' ? $url[1] : 'index';
 
+
+// Định tuyến các yêu cầu API
+if ($controllerName === 'ApiController' && isset($url[1])) {
+    $apiControllerName = ucfirst($url[1]) . 'ApiController';
+    $apiControllerFile = 'app/controllers/' . $apiControllerName . '.php';
+    if (file_exists($apiControllerFile)) {
+        require_once $apiControllerFile;
+        $controller = new $apiControllerName();
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodOverride = $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] ?? '';
+        if ($method === 'POST' && $methodOverride !== '') {
+            $method = strtoupper($methodOverride);
+        }
+        $id = $url[2] ?? null;
+        $action = null;
+        switch ($method) {
+            case 'GET':
+                $action = $id ? 'show' : 'index';
+                break;
+            case 'POST':
+                $action = 'store';
+                break;
+            case 'PUT':
+                $action = $id ? 'update' : null;
+                break;
+            case 'DELETE':
+                $action = $id ? 'destroy' : null;
+                break;
+            default:
+                http_response_code(405);
+                echo json_encode(['message' => 'Method Not Allowed']);
+                exit;
+        }
+        if ($action && method_exists($controller, $action)) {
+            if ($id) {
+                call_user_func_array([$controller, $action], [$id]);
+            } else {
+                call_user_func_array([$controller, $action], []);
+            }
+        } else {
+            http_response_code(404);
+            echo json_encode(['message' => 'Action not found']);
+        }
+        exit;
+    } else {
+        http_response_code(404);
+        echo json_encode(['message' => 'Controller not found']);
+        exit;
+    }
+}
+
 // die ("controller=$controllerName - action=$action");
 // Kiểm tra xem controller và action có tồn tại không 
 if (!file_exists('app/controllers/' . $controllerName . '.php')) {
