@@ -82,9 +82,17 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            alert('Vui lòng đăng nhập');
+            location.href = BASE_URL + '/Account/login';
+            return;
+        }
+        const authHeaders = { 'Authorization': 'Bearer ' + token };
+
         Promise.all([
-            fetch(BASE_URL + '/api/product/' + productId).then(response => response.json()),
-            fetch(BASE_URL + '/api/category').then(response => response.json())
+            fetch(BASE_URL + '/api/product/' + productId, { headers: authHeaders }).then(response => response.json()),
+            fetch(BASE_URL + '/api/category', { headers: authHeaders }).then(response => response.json())
         ]).then(([product, categories]) => {
             if (!product || !product.id) {
                 showErrors(['Không tìm thấy sản phẩm']);
@@ -124,6 +132,7 @@
             fetch(BASE_URL + '/api/product/' + productId, {
                     method: 'POST',
                     headers: {
+                        'Authorization': 'Bearer ' + token,
                         'X-HTTP-Method-Override': 'PUT'
                     },
                     body: formData

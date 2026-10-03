@@ -2,16 +2,18 @@
 
 require_once('app/config/database.php');
 require_once('app/models/AccountModel.php');
-
+require_once('app/utils/JWTHandler.php');
 class AccountController
 {
     private $accountModel;
     private $db;
+    private $jwtHandler;
 
     public function __construct()
     {
         $this->db = (new Database())->getConnection();
         $this->accountModel = new AccountModel($this->db);
+        $this->jwtHandler = new JWTHandler();
     }
 
     public function register()
@@ -36,6 +38,7 @@ class AccountController
             if (empty($fullName)) $errors['fullname'] = "Vui lòng nhập fullname!";
             if (empty($password)) $errors['password'] = "Vui lòng nhập password!";
             if ($password != $confirmPassword) $errors['confirmPass'] = "Mật khẩu và xác nhận chưa khớp!";
+
             if (!in_array($role, ['admin', 'user'])) $role = 'user';
             if ($this->accountModel->getAccountByUsername($username)) {
                 $errors['account'] = "Tài khoản này đã được đăng ký!";
@@ -63,28 +66,25 @@ class AccountController
         session_start();
         unset($_SESSION['username']);
         unset($_SESSION['role']);
-        header('Location: '.url('Product'));
+        header('Location: ' . url('Product'));
         exit;
     }
     public function checkLogin()
     {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $username = $_POST['username'] ?? '';
-            $password = $_POST['password'] ?? '';
-        }
-        $account = $this->accountModel->getAccountByUsername($username);
-        if ($account && password_verify($password, $account->password)) {
-            session_start();
-            if (!isset($_SESSION['username'])) {
-                $_SESSION['username'] = $account->username;
-                $_SESSION['role'] = $account->role;
-            }
-            header('Location: ' .url('Product'));
-            exit;
+        header('Content-Type: application/json');
+        $data = json_decode(file_get_contents("php://input"), true);
+
+        $username = $data['username'] ?? '';
+        $password = $data['password'] ?? '';
+        
+        $user = $this->accountModel->getAccountByUsername($username);
+        if ($user && password_verify($password, $user->password)) {
+            $token = $this->jwtHandler->encode(['id' => $user->id, 'username' =>
+            $user->username]);
+            echo json_encode(['token' => $token]);
         } else {
-            $error = $account ? "Mật khẩu không đúng!" : "Không tìm thấy tài khoản!";
-            include_once 'app/views/account/login.php';
-            exit;
+            http_response_code(401);
+            echo json_encode(['message' => 'Invalid credentials']);
         }
     }
 }

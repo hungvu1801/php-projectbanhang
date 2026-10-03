@@ -15,16 +15,11 @@
     </div>
 
     <div class="admin-panel">
-        <?php if (!empty($error)): ?>
-            <div class="text-danger" style="margin-bottom:14px;">
-                <?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?>
-            </div>
-        <?php endif; ?>
-        <form method="POST" action="<?php echo url('Account/checkLogin'); ?>" class="admin-form">
+        <div id="form-errors" class="text-danger" style="display:none;margin-bottom:14px;"></div>
+        <form id="login-form" class="admin-form">
             <div class="form-group">
                 <label for="username">Tên đăng nhập</label>
-                <input type="text" id="username" name="username" class="form-control"
-                    value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" required>
+                <input type="text" id="username" name="username" class="form-control" required>
             </div>
             <div class="form-group">
                 <label for="password">Mật khẩu</label>
@@ -39,3 +34,42 @@
 </div>
 
 <?php include 'app/views/shares/footer.php'; ?>
+
+<script>
+    const BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
+
+    function showError(message) {
+        const box = document.getElementById('form-errors');
+        box.textContent = message;
+        box.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            fetch(BASE_URL + '/Account/checkLogin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonData)
+                })
+                .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok && data.token) {
+                        localStorage.setItem('jwtToken', data.token);
+                        location.href = BASE_URL + '/Product';
+                        return;
+                    }
+                    showError(data.message || 'Đăng nhập thất bại');
+                })
+                .catch(() => showError('Không thể kết nối tới máy chủ.'));
+        });
+    });
+</script>

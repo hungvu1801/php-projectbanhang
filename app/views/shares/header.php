@@ -27,10 +27,9 @@
                 <div class="header__actions">
                     <?php if (SessionHelper::isLoggedIn()): ?>
                         <span class="header__link"><?php echo htmlspecialchars($_SESSION['username'], ENT_QUOTES, 'UTF-8'); ?></span>
-                        <a class="header__link" href="<?php echo url('Account/logout'); ?>">Đăng xuất</a>
-                    <?php else: ?>
-                        <a class="header__link" href="<?php echo url('Account/login'); ?>">Đăng nhập</a>
                     <?php endif; ?>
+                    <a id="nav-login" class="header__link" href="<?php echo url('Account/login'); ?>">Đăng nhập</a>
+                    <a id="nav-logout" class="header__link" href="<?php echo url('Account/logout'); ?>" onclick="logout(); return false;" style="display:none;">Đăng xuất</a>
                     <a href="<?php echo url('Product/cart'); ?>" class="header__cart">
                         <span class="header__cart-icon">
                             🛒
@@ -54,4 +53,28 @@
             </ul>
         </nav>
     </header>
+    <script>
+        const HEADER_BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
+
+        function logout() {
+            localStorage.removeItem('jwtToken');
+            location.href = HEADER_BASE_URL + '/Account/logout';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('jwtToken');
+            const navLogin = document.getElementById('nav-login');
+            const navLogout = document.getElementById('nav-logout');
+            if (!navLogin || !navLogout) {
+                return;
+            }
+            if (token) {
+                navLogin.style.display = 'none';
+                navLogout.style.display = '';
+            } else {
+                navLogin.style.display = '';
+                navLogout.style.display = 'none';
+            }
+        });
+    </script>
     <main class="tgdd-main">

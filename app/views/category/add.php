@@ -16,16 +16,8 @@
     </div>
 
     <div class="admin-panel">
-        <?php if (!empty($errors)): ?>
-            <div class="text-danger">
-                <ul>
-                    <?php foreach ($errors as $error): ?>
-                        <li><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
-        <form method="POST" action="<?php echo url('Category/save'); ?>" class="admin-form">
+        <div id="form-errors" class="text-danger" style="display:none;margin-bottom:14px;"></div>
+        <form id="add-category-form" class="admin-form">
             <div class="form-group">
                 <label for="name">Tên danh mục</label>
                 <input type="text" id="name" name="name" class="form-control" placeholder="Ví dụ: Điện thoại" required>
@@ -43,3 +35,68 @@
 </div>
 
 <?php include 'app/views/shares/footer.php'; ?>
+
+<script>
+    const BASE_URL = <?php echo json_encode(rtrim(BASE_URL, '/')); ?>;
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function showErrors(errors) {
+        const box = document.getElementById('form-errors');
+        const messages = Array.isArray(errors) ? errors : Object.values(errors || {});
+        if (!messages.length) {
+            box.style.display = 'none';
+            box.innerHTML = '';
+            return;
+        }
+        box.innerHTML = '<ul>' + messages.map(item => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>';
+        box.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            alert('Vui lòng đăng nhập');
+            location.href = BASE_URL + '/Account/login';
+            return;
+        }
+        const authHeaders = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        };
+
+        document.getElementById('add-category-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            fetch(BASE_URL + '/api/category', {
+                    method: 'POST',
+                    headers: authHeaders,
+                    body: JSON.stringify(jsonData)
+                })
+                .then(response => response.json().then(data => ({ ok: response.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok && data.message === 'Category created successfully') {
+                        location.href = BASE_URL + '/Category/list';
+                        return;
+                    }
+                    if (data.errors) {
+                        showErrors(data.errors);
+                    } else {
+                        showErrors([data.message || 'Thêm danh mục thất bại']);
+                    }
+                })
+                .catch(() => showErrors(['Không thể kết nối tới máy chủ.']));
+        });
+    });
+</script>

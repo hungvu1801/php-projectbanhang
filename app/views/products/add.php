@@ -74,7 +74,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        fetch(BASE_URL + '/api/category')
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            alert('Vui lòng đăng nhập');
+            location.href = BASE_URL + '/Account/login';
+            return;
+        }
+        const authHeaders = { 'Authorization': 'Bearer ' + token };
+
+        fetch(BASE_URL + '/api/category', { headers: authHeaders })
             .then(response => response.json())
             .then(data => {
                 const categorySelect = document.getElementById('category_id');
@@ -95,6 +103,7 @@
 
             fetch(BASE_URL + '/api/product', {
                     method: 'POST',
+                    headers: authHeaders,
                     body: formData
                 })
                 .then(response => response.json().then(data => ({ ok: response.ok, data })))
